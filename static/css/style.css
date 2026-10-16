@@ -1,0 +1,1167 @@
+/* ==========================================================================
+   SpendSmart — Personal Expense Tracker
+   Theme: Professional, Bright, Colorful, and Poppy Fintech SaaS
+   ========================================================================== */
+
+/* --- Google Fonts Import: Poppins (Headings) & Inter (Body) --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- CSS Variables & Strict Color Palette --- */
+:root {
+  --primary: #6C5CE7;      /* electric purple */
+  --secondary: #FF6B9D;    /* hot pink */
+  --accent: #FFB347;       /* sunny orange */
+  --teal: #00CEC9;         /* bright teal */
+  --green: #2ED573;        /* income / success */
+  --red: #FF4757;          /* expense / danger */
+  --blue: #4DA3FF;         /* vivid sky blue */
+  --orange-deep: #FF7675;  /* deep orange for near-limit */
+
+  /* Soft Light Gradient Background */
+  --bg: linear-gradient(135deg, #F5F3FF 0%, #FFF0F7 50%, #E8FBFF 100%);
+  --bg-color: #F8F9FE;
+
+  /* Glassmorphism Card Style: White with 80% opacity and blur */
+  --card: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(255, 255, 255, 0.7);
+  --card-shadow: 0 10px 30px rgba(108, 92, 231, 0.08), 0 2px 8px rgba(0, 0, 0, 0.02);
+  --card-shadow-hover: 0 18px 40px rgba(108, 92, 231, 0.16), 0 4px 12px rgba(0, 0, 0, 0.04);
+
+  --text: #2D2A45;
+  --text-muted: #64748B;
+  --text-light: #94A3B8;
+
+  --radius-card: 22px;
+  --radius-pill: 9999px;
+  --radius-sm: 10px;
+
+  --transition-fast: 0.18s ease;
+  --transition-smooth: 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- Global Reset --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  background-attachment: fixed;
+  min-height: 100vh;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+/* ==========================================================================
+   Background Animation Layer: Moving Blobs, Floating Icons & Particles
+   ========================================================================== */
+#spendsmart-bg-canvas,
+.bg-canvas-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bg-gradient-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(75px);
+  opacity: 0.75;
+  will-change: transform;
+  animation: blobDrift 20s infinite alternate ease-in-out;
+}
+
+.blob-1 { animation-duration: 22s; }
+.blob-2 { animation-duration: 26s; animation-delay: -5s; }
+.blob-3 { animation-duration: 28s; animation-delay: -10s; }
+.blob-4 { animation-duration: 24s; animation-delay: -7s; }
+
+@keyframes blobDrift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.08); }
+  100% { transform: translate(-30px, 35px) scale(0.95); }
+}
+
+.floating-bg-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  user-select: none;
+  pointer-events: auto; /* allows interactive hover & tap */
+  cursor: pointer;
+  will-change: transform, opacity;
+  transition: filter 0.2s ease;
+}
+
+.floating-bg-icon:hover {
+  filter: drop-shadow(0 0 12px rgba(108, 92, 231, 0.6)) brightness(1.2);
+}
+
+.floating-bg-icon.pop-animation {
+  animation: iconPop 0.55s var(--transition-bounce) forwards;
+}
+
+@keyframes iconPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.65) rotate(15deg); opacity: 1; }
+  100% { transform: scale(0.1) rotate(-30deg); opacity: 0; }
+}
+
+.burst-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+  animation: particleShoot 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes particleShoot {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Sticky Glass Navbar
+   ========================================================================== */
+.site-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 20px rgba(108, 92, 231, 0.06);
+  padding: 0.75rem 1.5rem;
+  transition: all var(--transition-fast);
+}
+
+.nav-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+/* Brand Link & Logo */
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.brand-logo-small {
+  width: 36px;
+  height: 36px;
+  transition: transform var(--transition-bounce);
+}
+
+.brand-link:hover .brand-logo-small {
+  transform: rotate(10deg) scale(1.1);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Center Nav Links */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  list-style: none;
+}
+
+.nav-link-item {
+  position: relative;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  padding: 0.45rem 0.6rem;
+  transition: color var(--transition-fast);
+}
+
+.nav-link-item:hover {
+  color: var(--primary);
+}
+
+.nav-link-item.active {
+  color: var(--primary);
+}
+
+/* Gradient underline for active link */
+.nav-link-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0.6rem;
+  right: 0.6rem;
+  height: 3.5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  animation: slideUnderline 0.3s ease;
+}
+
+@keyframes slideUnderline {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Right Nav: User Chip & Logout */
+.nav-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(108, 92, 231, 0.08);
+  border: 1px solid rgba(108, 92, 231, 0.18);
+  padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
+}
+
+.user-chip:hover {
+  background: rgba(108, 92, 231, 0.14);
+}
+
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
+}
+
+.user-chip-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-chip-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.user-chip-time {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Logout Button */
+.btn-logout {
+  background: rgba(255, 71, 87, 0.1);
+  color: var(--red);
+  border: 1px solid rgba(255, 71, 87, 0.2);
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-pill);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-logout:hover {
+  background: var(--red);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+
+/* Mobile Hamburger Toggle */
+.hamburger-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem;
+  color: var(--text);
+}
+
+/* ==========================================================================
+   Buttons (Pill-shaped, gradient fills, hover pop, ripple)
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-bounce), box-shadow var(--transition-smooth), background var(--transition-fast);
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Button Variants */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.32);
+}
+
+.btn-primary:hover {
+  color: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(108, 92, 231, 0.45);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.btn-secondary:hover {
+  background: #FFFFFF;
+  color: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px rgba(108, 92, 231, 0.16);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--green) 0%, #20BF6B 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(46, 213, 115, 0.35);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--red) 0%, #EB3B5A 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(255, 71, 87, 0.35);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.btn-lg {
+  padding: 0.85rem 2rem;
+  font-size: 1.05rem;
+}
+
+/* ==========================================================================
+   Cards & Glassmorphism
+   ========================================================================== */
+.card {
+  background: var(--card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  padding: 1.5rem;
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+  animation: cardFadeIn 0.5s ease both;
+}
+
+.card:hover {
+  transform: translateY(-4px) scale(1.008);
+  box-shadow: var(--card-shadow-hover);
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   Login Page (Centered flexbox/grid, Big Logo, Live Clock)
+   ========================================================================== */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+}
+
+/* Live Clock Badge */
+.live-clock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(108, 92, 231, 0.25);
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius-pill);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--primary);
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.12);
+  margin-bottom: 1.5rem;
+  animation: badgePulse 4s infinite alternate ease-in-out;
+}
+
+@keyframes badgePulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.02); }
+}
+
+.clock-icon {
+  font-size: 1.15rem;
+  animation: clockSpin 12s linear infinite;
+}
+
+@keyframes clockSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Login Card Container */
+.login-card {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(108, 92, 231, 0.18), 0 4px 16px rgba(255, 107, 157, 0.08);
+  padding: 2.5rem 2.25rem;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+}
+
+/* Big SpendSmart Logo with soft glow and gentle float */
+.login-logo-container {
+  margin-bottom: 1.25rem;
+  position: relative;
+  display: inline-block;
+}
+
+.login-big-logo {
+  height: 160px;
+  width: auto;
+  max-width: 100%;
+  filter: drop-shadow(0 12px 24px rgba(108, 92, 231, 0.35));
+  animation: logoFloat 4.5s infinite ease-in-out;
+  transition: transform 0.3s ease;
+}
+
+.login-big-logo:hover {
+  transform: scale(1.08) rotate(4deg);
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.login-title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+
+.login-tagline {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 1.75rem;
+}
+
+/* Login Form */
+.login-form {
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-label {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid rgba(108, 92, 231, 0.2);
+  border-radius: 14px;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.18);
+  background: #FFFFFF;
+}
+
+.form-control.is-invalid {
+  border-color: var(--red);
+  background: rgba(255, 71, 87, 0.03);
+}
+
+.form-control.is-invalid:focus {
+  box-shadow: 0 0 0 4px rgba(255, 71, 87, 0.18);
+}
+
+/* Inline Validation Errors in Red with small icon */
+.invalid-feedback {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--red);
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 0.35rem;
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Big Login Button */
+.btn-login {
+  width: 100%;
+  padding: 0.95rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+  background-size: 200% auto;
+  color: #FFFFFF;
+  box-shadow: 0 8px 25px rgba(108, 92, 231, 0.35);
+  transition: all var(--transition-bounce), background-position 0.5s ease;
+}
+
+.btn-login:hover {
+  background-position: right center;
+  transform: scale(1.03) translateY(-2px);
+  box-shadow: 0 12px 30px rgba(108, 92, 231, 0.45);
+}
+
+/* ==========================================================================
+   Dashboard Page Elements
+   ========================================================================== */
+.main-wrapper {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem 1.5rem;
+}
+
+/* Welcome Banner */
+.welcome-banner {
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(255, 107, 157, 0.12) 50%, rgba(0, 206, 201, 0.12) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-card);
+  padding: 1.6rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(108, 92, 231, 0.08);
+}
+
+.welcome-text h1 {
+  font-size: 1.7rem;
+  margin-bottom: 0.3rem;
+}
+
+.welcome-text p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Summary Metrics 4-Grid */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.summary-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.summary-card-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  color: #fff;
+}
+
+/* Individual Metric Card Gradients */
+.metric-income {
+  border-left: 5px solid var(--green);
+}
+.metric-income .summary-icon-box {
+  background: linear-gradient(135deg, var(--green), #00CEC9);
+  box-shadow: 0 6px 16px rgba(46, 213, 115, 0.35);
+}
+
+.metric-expense {
+  border-left: 5px solid var(--red);
+}
+.metric-expense .summary-icon-box {
+  background: linear-gradient(135deg, var(--red), var(--secondary));
+  box-shadow: 0 6px 16px rgba(255, 71, 87, 0.35);
+}
+
+.metric-balance {
+  border-left: 5px solid var(--primary);
+}
+.metric-balance .summary-icon-box {
+  background: linear-gradient(135deg, var(--primary), #8B5CF6);
+  box-shadow: 0 6px 16px rgba(108, 92, 231, 0.35);
+}
+
+.metric-budget {
+  border-left: 5px solid var(--accent);
+}
+.metric-budget .summary-icon-box {
+  background: linear-gradient(135deg, var(--accent), var(--teal));
+  box-shadow: 0 6px 16px rgba(255, 179, 71, 0.35);
+}
+
+.metric-value {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+/* Student Budget Health Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-pill);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.badge-success {
+  background: rgba(46, 213, 115, 0.15);
+  color: #10AC84;
+  border: 1px solid rgba(46, 213, 115, 0.3);
+}
+
+.badge-warning {
+  background: rgba(255, 179, 71, 0.18);
+  color: #D35400;
+  border: 1px solid rgba(255, 179, 71, 0.35);
+}
+
+.badge-near-limit {
+  background: rgba(255, 118, 117, 0.18);
+  color: #D63031;
+  border: 1px solid rgba(255, 118, 117, 0.35);
+}
+
+.badge-danger {
+  background: rgba(255, 71, 87, 0.18);
+  color: var(--red);
+  border: 1px solid rgba(255, 71, 87, 0.35);
+}
+
+.badge-info {
+  background: rgba(108, 92, 231, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(108, 92, 231, 0.25);
+}
+
+/* Budget Progress Bar */
+.progress-container {
+  width: 100%;
+  height: 12px;
+  background: rgba(108, 92, 231, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.75rem 0 0.4rem 0;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dashboard Section Layout (Chart + Recent Transactions) */
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1.75rem;
+  margin-top: 1rem;
+}
+
+/* Floating Action Button (FAB) */
+.fab-add {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 90;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: #FFFFFF;
+  padding: 0.95rem 1.6rem;
+  border-radius: var(--radius-pill);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 10px 28px rgba(108, 92, 231, 0.42);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-bounce);
+}
+
+.fab-add:hover {
+  transform: scale(1.08) translateY(-3px);
+  box-shadow: 0 14px 34px rgba(108, 92, 231, 0.55);
+}
+
+/* ==========================================================================
+   Transactions Table & Filters
+   ========================================================================== */
+.table-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--card);
+  backdrop-filter: blur(14px);
+  padding: 1.25rem;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--card-border);
+}
+
+.table-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 18px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+.data-table th {
+  background: rgba(108, 92, 231, 0.06);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid rgba(108, 92, 231, 0.12);
+  white-space: nowrap;
+}
+
+.data-table th:first-child { border-top-left-radius: 14px; }
+.data-table th:last-child { border-top-right-radius: 14px; }
+
+.data-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(108, 92, 231, 0.08);
+  font-size: 0.92rem;
+  vertical-align: middle;
+  background: rgba(255, 255, 255, 0.6);
+  transition: background var(--transition-fast);
+}
+
+.data-table tr:hover td {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.amount-income {
+  color: var(--green);
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+}
+
+.amount-expense {
+  color: var(--red);
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Needs vs Wants Tag Badge */
+.tag-need {
+  background: rgba(0, 206, 201, 0.15);
+  color: #00A896;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+}
+
+.tag-want {
+  background: rgba(255, 107, 157, 0.15);
+  color: #E84393;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+}
+
+/* Category Badge */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(108, 92, 231, 0.08);
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-pill);
+}
+
+/* Action Icon Buttons */
+.btn-action-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  background: rgba(108, 92, 231, 0.08);
+  color: var(--primary);
+  transition: all var(--transition-fast);
+}
+
+.btn-action-icon:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.btn-action-icon.btn-delete:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Toasts & Alerts
+   ========================================================================== */
+.toast-container {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 400px;
+}
+
+.toast {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  border-left: 6px solid var(--primary);
+  animation: toastSlideIn 0.35s var(--transition-bounce) both;
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.toast-success { border-left-color: var(--green); }
+.toast.toast-danger, .toast.toast-error { border-left-color: var(--red); }
+.toast.toast-warning { border-left-color: var(--accent); }
+.toast.toast-info { border-left-color: var(--primary); }
+
+.toast-message {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Modal Dialog (Accessible Delete Confirmation)
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(45, 42, 69, 0.45);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.modal-backdrop.active {
+  display: flex;
+}
+
+.modal-dialog {
+  background: #FFFFFF;
+  border-radius: 24px;
+  max-width: 460px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  animation: modalPop 0.3s var(--transition-bounce);
+  text-align: center;
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-title {
+  font-size: 1.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.modal-text {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* ==========================================================================
+   Responsive Media Queries & Reduced Motion
+   ========================================================================== */
+@media (max-width: 992px) {
+  .dashboard-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    flex-direction: column;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(108, 92, 231, 0.15);
+  }
+
+  .nav-links.mobile-open {
+    display: flex;
+  }
+
+  .hamburger-btn {
+    display: block;
+  }
+
+  .user-chip-text {
+    display: none;
+  }
+
+  .welcome-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.25rem 1rem;
+  }
+
+  .welcome-text h1 {
+    font-size: 1.35rem;
+    word-break: break-word;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .fab-add {
+    bottom: 1.5rem;
+    right: 1.5rem;
+    padding: 0.8rem 1.25rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

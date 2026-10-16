@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions — SpendSmart Personal Expense Tracker{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+  <div>
+    <h1 class="font-heading" style="font-size: 1.8rem;">All Transactions</h1>
+    <p style="color: var(--text-muted); font-size: 0.92rem;">
+      Search, filter, categorize, and manage your income & expenses.
+    </p>
+  </div>
+  <a href="{{ url_for('transaction_add') }}" class="btn btn-primary">
+    <span>+ Add Transaction</span>
+  </a>
+</div>
+
+<!-- Search, Filter & Sort Bar -->
+<section class="table-filter-bar">
+  <form method="GET" action="{{ url_for('transactions_list') }}" style="display: flex; flex-wrap: wrap; gap: 0.75rem; width: 100%; align-items: center;">
+    
+    <!-- Search Query Input -->
+    <div style="flex: 2; min-width: 220px;">
+      <input
+        type="text"
+        name="search"
+        class="form-control"
+        placeholder="🔍 Search description or category..."
+        value="{{ search_query or '' }}"
+      >
+    </div>
+
+    <!-- Type Filter -->
+    <div style="flex: 1; min-width: 140px;">
+      <select name="type" class="form-control" onchange="this.form.submit()">
+        <option value="">All Types</option>
+        <option value="income" {% if current_type == 'income' %}selected{% endif %}>Income Only</option>
+        <option value="expense" {% if current_type == 'expense' %}selected{% endif %}>Expense Only</option>
+      </select>
+    </div>
+
+    <!-- Category Filter -->
+    <div style="flex: 1.2; min-width: 160px;">
+      <select name="category" class="form-control" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        <optgroup label="Expenses">
+          {% for cat in expense_categories %}
+            <option value="{{ cat }}" {% if current_category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="Income">
+          {% for cat in income_categories %}
+            <option value="{{ cat }}" {% if current_category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </optgroup>
+      </select>
+    </div>
+
+    <!-- Month Filter -->
+    <div style="flex: 1; min-width: 150px;">
+      <input
+        type="month"
+        name="month"
+        class="form-control"
+        value="{{ current_month or '' }}"
+        onchange="this.form.submit()"
+      >
+    </div>
+
+    <!-- Sort By & Order -->
+    <div style="flex: 1; min-width: 140px;">
+      <select name="sort" class="form-control" onchange="this.form.submit()">
+        <option value="date_desc" {% if current_sort == 'date_desc' %}selected{% endif %}>Date (Newest)</option>
+        <option value="date_asc" {% if current_sort == 'date_asc' %}selected{% endif %}>Date (Oldest)</option>
+        <option value="amount_desc" {% if current_sort == 'amount_desc' %}selected{% endif %}>Amount (Highest)</option>
+        <option value="amount_asc" {% if current_sort == 'amount_asc' %}selected{% endif %}>Amount (Lowest)</option>
+      </select>
+    </div>
+
+    <!-- Filter Action Buttons -->
+    <div style="display: flex; gap: 0.5rem;">
+      <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      <a href="{{ url_for('transactions_list') }}" class="btn btn-secondary btn-sm" title="Clear all filters">Reset</a>
+    </div>
+
+  </form>
+</section>
+
+<!-- Transactions Table Card -->
+<section class="card" style="padding: 0; overflow: hidden;">
+  {% if transactions and transactions|length > 0 %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Tag</th>
+            <th style="text-align: right;">Amount</th>
+            <th style="text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in transactions %}
+            <tr>
+              <td style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted); white-space: nowrap;">
+                {{ tx.date }}
+              </td>
+              <td>
+                <span style="font-weight: 600; color: var(--text); font-size: 0.95rem;">
+                  {{ tx.description }}
+                </span>
+              </td>
+              <td>
+                <span class="badge {% if tx.transaction_type == 'income' %}badge-success{% else %}badge-danger{% endif %}">
+                  {{ tx.transaction_type|capitalize }}
+                </span>
+              </td>
+              <td>
+                <span class="category-badge">{{ tx.category }}</span>
+              </td>
+              <td>
+                {% if tx.transaction_type == 'expense' %}
+                  <span class="{% if tx.need_or_want == 'Need' %}tag-need{% else %}tag-want{% endif %}">
+                    {{ tx.need_or_want }}
+                  </span>
+                {% else %}
+                  <span style="color: var(--text-muted); font-size: 0.78rem;">&mdash;</span>
+                {% endif %}
+              </td>
+              <td style="text-align: right; white-space: nowrap;">
+                <span class="{% if tx.transaction_type == 'income' %}amount-income{% else %}amount-expense{% endif %}" style="font-size: 1rem;">
+                  {% if tx.transaction_type == 'income' %}+{% else %}-{% endif %}{{ format_inr(tx.amount) }}
+                </span>
+              </td>
+              <td style="text-align: center; white-space: nowrap;">
+                <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
+                  <!-- Edit Button -->
+                  <a href="{{ url_for('transaction_edit', tx_id=tx.id) }}" class="btn-action-icon" title="Edit transaction">
+                    ✏️
+                  </a>
+                  <!-- Delete Trigger Button (Opens Confirmation Modal) -->
+                  <button
+                    type="button"
+                    class="btn-action-icon btn-delete btn-delete-trigger"
+                    data-id="{{ tx.id }}"
+                    data-desc="{{ tx.description }} ({{ format_inr(tx.amount) }})"
+                    title="Delete transaction"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Summary Footer -->
+    <div style="padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; background: rgba(108, 92, 231, 0.03); border-top: 1px solid rgba(108, 92, 231, 0.08); font-size: 0.85rem; color: var(--text-muted);">
+      <span>Showing <strong>{{ transactions|length }}</strong> transactions</span>
+      <a href="{{ url_for('export_csv_route', month=current_month) }}" class="btn btn-secondary btn-sm">
+        <span>📥 Export CSV</span>
+      </a>
+    </div>
+
+  {% else %}
+    <div style="text-align: center; padding: 4rem 1.5rem; color: var(--text-muted);">
+      <span style="font-size: 3rem; display: block; margin-bottom: 0.75rem;">🔍</span>
+      <h3 class="font-heading" style="font-size: 1.25rem; color: var(--text);">No Transactions Found</h3>
+      <p style="font-size: 0.9rem; margin-top: 0.35rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+        No records match your active search or filters. Try adjusting your filter parameters or record a new transaction.
+      </p>
+      <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: center;">
+        <a href="{{ url_for('transactions_list') }}" class="btn btn-secondary btn-sm">Clear Filters</a>
+        <a href="{{ url_for('transaction_add') }}" class="btn btn-primary btn-sm">+ Add Transaction</a>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

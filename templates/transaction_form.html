@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if is_edit %}Edit Transaction{% else %}Add Transaction{% endif %} — SpendSmart
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+
+  <!-- Form Header -->
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <h1 class="font-heading" style="font-size: 1.85rem; margin-bottom: 0.35rem;">
+      {% if is_edit %}Edit Transaction{% else %}Add New Transaction{% endif %}
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      {% if is_edit %}Update details for this income or expense.{% else %}Record a new income entry or expense with smart categorization.{% endif %}
+    </p>
+  </div>
+
+  <!-- Form Card -->
+  <div class="card" style="padding: 2.25rem 2rem;">
+    <form method="POST" id="transactionForm" novalidate>
+
+      <!-- 1. Type Toggle (Income / Expense) -->
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label class="form-label">Transaction Type <span style="color: var(--red);">*</span></label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <label style="cursor: pointer;">
+            <input
+              type="radio"
+              name="transaction_type"
+              value="expense"
+              style="display: none;"
+              {% if not form_data.transaction_type or form_data.transaction_type == 'expense' %}checked{% endif %}
+              id="typeExpense"
+            >
+            <div class="type-pill-btn expense-btn" style="text-align: center; padding: 0.75rem 1rem; border-radius: var(--radius-pill); border: 2px solid var(--red); font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem; transition: all var(--transition-fast);">
+              <span>💸 Expense</span>
+            </div>
+          </label>
+
+          <label style="cursor: pointer;">
+            <input
+              type="radio"
+              name="transaction_type"
+              value="income"
+              style="display: none;"
+              {% if form_data.transaction_type == 'income' %}checked{% endif %}
+              id="typeIncome"
+            >
+            <div class="type-pill-btn income-btn" style="text-align: center; padding: 0.75rem 1rem; border-radius: var(--radius-pill); border: 2px solid var(--green); font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem; transition: all var(--transition-fast);">
+              <span>💰 Income</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 2. Amount (₹) -->
+      <div class="form-group">
+        <label for="amountInput" class="form-label">
+          Amount (₹) <span style="color: var(--red);">*</span>
+        </label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); font-family: 'Poppins', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--primary);">₹</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            id="amountInput"
+            name="amount"
+            class="form-control {% if errors and errors.amount %}is-invalid{% endif %}"
+            placeholder="0.00"
+            style="padding-left: 2.25rem; font-size: 1.15rem; font-weight: 700;"
+            value="{{ form_data.amount if form_data else '' }}"
+            required
+          >
+        </div>
+        {% if errors and errors.amount %}
+          <div class="invalid-feedback">
+            <span>⚠️</span> <span>{{ errors.amount }}</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 3. Description -->
+      <div class="form-group">
+        <label for="descInput" class="form-label">
+          Description <span style="color: var(--red);">*</span>
+        </label>
+        <input
+          type="text"
+          id="descInput"
+          name="description"
+          class="form-control {% if errors and errors.description %}is-invalid{% endif %}"
+          placeholder="e.g. Books, College Canteen, Monthly Allowance..."
+          value="{{ form_data.description if form_data else '' }}"
+          required
+        >
+        {% if errors and errors.description %}
+          <div class="invalid-feedback">
+            <span>⚠️</span> <span>{{ errors.description }}</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 4. Date (Default today) -->
+      <div class="form-group">
+        <label for="dateInput" class="form-label">
+          Date <span style="color: var(--red);">*</span>
+        </label>
+        <input
+          type="date"
+          id="dateInput"
+          name="date"
+          class="form-control {% if errors and errors.date %}is-invalid{% endif %}"
+          value="{{ form_data.date if form_data and form_data.date else today_date }}"
+          required
+        >
+        {% if errors and errors.date %}
+          <div class="invalid-feedback">
+            <span>⚠️</span> <span>{{ errors.date }}</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 5. Category Dropdown (Dynamic) -->
+      <div class="form-group">
+        <label for="categorySelect" class="form-label">
+          Category <span style="color: var(--red);">*</span>
+        </label>
+        <select
+          id="categorySelect"
+          name="category"
+          class="form-control {% if errors and errors.category %}is-invalid{% endif %}"
+          data-selected="{{ form_data.category if form_data else '' }}"
+          required
+        >
+          <!-- Populated by JavaScript according to Income vs Expense -->
+        </select>
+        {% if errors and errors.category %}
+          <div class="invalid-feedback">
+            <span>⚠️</span> <span>{{ errors.category }}</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 6. Needs vs Wants Tag (Shown for Expense) -->
+      <div class="form-group" id="needWantContainer">
+        <label class="form-label">Needs vs Wants Classification</label>
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.25rem;">
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input
+              type="radio"
+              name="need_or_want"
+              value="Need"
+              {% if not form_data.need_or_want or form_data.need_or_want == 'Need' %}checked{% endif %}
+            >
+            <span class="tag-need" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">🌱 Need (Essential)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input
+              type="radio"
+              name="need_or_want"
+              value="Want"
+              {% if form_data.need_or_want == 'Want' %}checked{% endif %}
+            >
+            <span class="tag-want" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">✨ Want (Lifestyle / Wish)</span>
+          </label>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem;">
+          Classifying expenses as Need vs Want powers your student budget analytics.
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <a href="{{ url_for('transactions_list') }}" class="btn btn-secondary" style="flex: 1;">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="flex: 2;">
+          {% if is_edit %}💾 Update Transaction{% else %}✨ Save Transaction{% endif %}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<style>
+  /* Toggle Pill active styles */
+  input[name="transaction_type"]:checked + .expense-btn {
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(255, 71, 87, 0.4);
+  }
+  input[name="transaction_type"]:not(:checked) + .expense-btn {
+    background: rgba(255, 71, 87, 0.08);
+    color: var(--red);
+  }
+  input[name="transaction_type"]:checked + .income-btn {
+    background: var(--green);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(46, 213, 115, 0.4);
+  }
+  input[name="transaction_type"]:not(:checked) + .income-btn {
+    background: rgba(46, 213, 115, 0.08);
+    color: var(--green);
+  }
+</style>
+{% endblock %}

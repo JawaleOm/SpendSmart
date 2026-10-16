@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — SpendSmart Personal Expense Tracker{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<section class="welcome-banner">
+  <div class="welcome-text">
+    <h1 class="font-heading">
+      Welcome, <span class="gradient-text">{{ user_name }}</span>! 👋
+    </h1>
+    <p>
+      <span>🗓️</span>
+      <span>You logged in on <strong>{{ login_date }}</strong> at <strong>{{ login_time }}</strong>.</span>
+    </p>
+  </div>
+  <div class="welcome-actions" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+    <form method="GET" action="{{ url_for('dashboard') }}" style="display: flex; align-items: center; gap: 0.5rem;">
+      <label for="monthSelect" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Month:</label>
+      <input
+        type="month"
+        id="monthSelect"
+        name="month"
+        value="{{ current_month }}"
+        class="form-control"
+        style="padding: 0.45rem 0.8rem; font-size: 0.88rem; width: auto;"
+        onchange="this.form.submit()"
+      >
+    </form>
+    <a href="{{ url_for('transaction_add') }}" class="btn btn-primary btn-sm">
+      <span>+ Add Transaction</span>
+    </a>
+  </div>
+</section>
+
+<!-- Demo Data Banner (Visible ONLY when user has 0 transactions) -->
+{% if tx_count == 0 %}
+<div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, rgba(255, 179, 71, 0.15), rgba(255, 107, 157, 0.15)); border: 1.5px dashed var(--accent); text-align: center; padding: 2rem;">
+  <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">🎁</span>
+  <h2 class="font-heading" style="font-size: 1.35rem; margin-bottom: 0.4rem;">Get Started with Realistic Student Data!</h2>
+  <p style="color: var(--text-muted); max-width: 550px; margin: 0 auto 1.25rem auto; font-size: 0.95rem;">
+    Your account is currently empty. Click below to load a sample student profile with ₹15,000 allowance income, 12 categorized college expenses, and a ₹10,000 budget to explore SpendSmart instantly.
+  </p>
+  <form method="POST" action="{{ url_for('load_sample_data_route') }}">
+    <button type="submit" class="btn btn-success btn-lg">
+      <span>⚡ Load Sample Data</span>
+    </button>
+  </form>
+</div>
+{% endif %}
+
+<!-- 4 Summary Metric Cards -->
+<section class="summary-grid">
+  
+  <!-- 1. Total Income (Green) -->
+  <div class="card summary-card metric-income">
+    <div class="summary-card-header">
+      <span class="summary-card-title">Total Income</span>
+      <div class="summary-icon-box">💰</div>
+    </div>
+    <div class="metric-value count-up" data-target="{{ totals.income }}">
+      {{ format_inr(totals.income) }}
+    </div>
+    <span style="font-size: 0.8rem; color: var(--green); font-weight: 600; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.3rem;">
+      <span>▲</span> <span>All inflows for {{ month_label }}</span>
+    </span>
+  </div>
+
+  <!-- 2. Total Expenses (Red / Pink) -->
+  <div class="card summary-card metric-expense">
+    <div class="summary-card-header">
+      <span class="summary-card-title">Total Expenses</span>
+      <div class="summary-icon-box">💸</div>
+    </div>
+    <div class="metric-value count-up" data-target="{{ totals.expense }}">
+      {{ format_inr(totals.expense) }}
+    </div>
+    <span style="font-size: 0.8rem; color: var(--red); font-weight: 600; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.3rem;">
+      <span>▼</span> <span>Total spent this month</span>
+    </span>
+  </div>
+
+  <!-- 3. Remaining Balance (Electric Purple) -->
+  <div class="card summary-card metric-balance">
+    <div class="summary-card-header">
+      <span class="summary-card-title">Remaining Balance</span>
+      <div class="summary-icon-box">🏦</div>
+    </div>
+    <div class="metric-value count-up" data-target="{{ totals.balance }}" style="color: {% if totals.balance < 0 %}var(--red){% else %}var(--primary){% endif %};">
+      {{ format_inr(totals.balance) }}
+    </div>
+    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-top: 0.5rem;">
+      Net savings (Income &minus; Expenses)
+    </span>
+  </div>
+
+  <!-- 4. Monthly Budget Left (Orange / Teal) -->
+  <div class="card summary-card metric-budget">
+    <div class="summary-card-header">
+      <span class="summary-card-title">Monthly Budget Left</span>
+      <div class="summary-icon-box">🎯</div>
+    </div>
+    {% if budget_info %}
+      <div class="metric-value count-up" data-target="{{ budget_info.remaining }}" style="color: {% if budget_info.remaining < 0 %}var(--red){% else %}var(--accent){% endif %};">
+        {{ format_inr(budget_info.remaining) }}
+      </div>
+      <div class="progress-container">
+        <div
+          class="progress-bar"
+          style="width: {{ min(health.pct, 100.0) }}%; background: {{ health.progress_color }};"
+        ></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-weight: 600; margin-top: 0.3rem;">
+        <span style="color: var(--text-muted);">{{ health.pct_display }} used</span>
+        <span class="badge {{ health.color_class }}">{{ health.status }}</span>
+      </div>
+    {% else %}
+      <div class="metric-value" style="font-size: 1.3rem; color: var(--text-muted);">
+        Not Set
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+        <a href="{{ url_for('budget_planner', month=current_month) }}" style="color: var(--primary); font-weight: 600;">+ Set Monthly Budget</a>
+      </p>
+    {% endif %}
+  </div>
+
+</section>
+
+<!-- Student Budget Health Indicator Alert Banner -->
+<section class="card" style="margin-bottom: 2rem; border-left: 6px solid {{ health.progress_color }};">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <div style="font-size: 1.8rem;">
+        {% if health.status == 'On Track' %}🌱
+        {% elif health.status == 'Caution' %}⚠️
+        {% elif health.status == 'Near Limit' %}🚨
+        {% elif health.status == 'Over Budget' %}🛑
+        {% else %}ℹ️{% endif %}
+      </div>
+      <div>
+        <h3 class="font-heading" style="font-size: 1.1rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>Student Budget Health:</span>
+          <span class="badge {{ health.color_class }}">{{ health.status }}</span>
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">{{ health.message }}</p>
+      </div>
+    </div>
+    {% if budget_info %}
+      <div style="text-align: right;">
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Budget Limit:</span>
+        <strong style="font-size: 1.1rem; display: block; color: var(--text);">{{ format_inr(budget_info.monthly_limit) }}</strong>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Dashboard Main Columns: Doughnut Chart + Recent 5 Transactions -->
+<div class="dashboard-columns">
+
+  <!-- Left: Expenses by Category Doughnut Chart -->
+  <section class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+      <div>
+        <h3 class="font-heading" style="font-size: 1.15rem;">Expense Breakdown</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Category-wise spending for {{ month_label }}</p>
+      </div>
+      <a href="{{ url_for('reports_page', month=current_month) }}" style="font-size: 0.85rem; font-weight: 600; color: var(--primary);">
+        Full Reports &rarr;
+      </a>
+    </div>
+
+    {% if category_expenses and category_expenses|length > 0 %}
+      <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="categoryChart"></canvas>
+      </div>
+      <!-- Category Legend Pills -->
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; justify-content: center;">
+        {% for cat in category_expenses %}
+          <div class="category-badge">
+            <span>{{ cat.category }}:</span>
+            <strong>{{ format_inr(cat.total) }}</strong>
+            <span style="color: var(--text-muted); font-size: 0.72rem;">({{ cat.percentage }}%)</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+        <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">📊</span>
+        <p style="font-weight: 600;">No expenses recorded for this month.</p>
+        <p style="font-size: 0.85rem; margin-top: 0.25rem;">Add your first expense to view the visual breakdown.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Right: Recent 5 Transactions -->
+  <section class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+      <div>
+        <h3 class="font-heading" style="font-size: 1.15rem;">Recent Transactions</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Latest 5 activities this month</p>
+      </div>
+      <a href="{{ url_for('transactions_list', month=current_month) }}" style="font-size: 0.85rem; font-weight: 600; color: var(--primary);">
+        View All &rarr;
+      </a>
+    </div>
+
+    {% if recent_transactions and recent_transactions|length > 0 %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th style="text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tx in recent_transactions %}
+              <tr>
+                <td style="font-size: 0.82rem; color: var(--text-muted); white-space: nowrap;">
+                  {{ tx.date }}
+                </td>
+                <td>
+                  <strong style="color: var(--text); font-size: 0.9rem;">{{ tx.description }}</strong>
+                  {% if tx.transaction_type == 'expense' %}
+                    <span class="{% if tx.need_or_want == 'Need' %}tag-need{% else %}tag-want{% endif %}" style="margin-left: 0.35rem;">
+                      {{ tx.need_or_want }}
+                    </span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="category-badge">{{ tx.category }}</span>
+                </td>
+                <td style="text-align: right;">
+                  <span class="{% if tx.transaction_type == 'income' %}amount-income{% else %}amount-expense{% endif %}">
+                    {% if tx.transaction_type == 'income' %}+{% else %}-{% endif %}{{ format_inr(tx.amount) }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+        <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">📝</span>
+        <p style="font-weight: 600;">No transactions yet.</p>
+        <p style="font-size: 0.85rem; margin-top: 0.25rem;">Click below or use the quick button to record your income or expense.</p>
+        <a href="{{ url_for('transaction_add') }}" class="btn btn-primary btn-sm" style="margin-top: 1rem;">
+          + Add First Transaction
+        </a>
+      </div>
+    {% endif %}
+  </section>
+
+</div>
+
+<!-- Quick Floating Action Button (FAB) -->
+<a href="{{ url_for('transaction_add') }}" class="fab-add" title="Quick Add Transaction">
+  <span style="font-size: 1.25rem;">+</span>
+  <span>Add Transaction</span>
+</a>
+{% endblock %}
+
+{% block scripts %}
+{% if category_expenses and category_expenses|length > 0 %}
+<script>
+  (function() {
+    const ctx = document.getElementById('categoryChart');
+    if (!ctx) return;
+
+    const labels = {{ cat_labels | tojson }};
+    const data = {{ cat_data | tojson }};
+
+    const colorPalette = [
+      '#6C5CE7', '#FF6B9D', '#FFB347', '#00CEC9',
+      '#2ED573', '#FF4757', '#4DA3FF', '#A29BFE', '#FD79A8'
+    ];
+
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colorPalette.slice(0, labels.length),
+          borderWidth: 2,
+          borderColor: '#FFFFFF',
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              boxWidth: 14,
+              padding: 12,
+              font: {
+                family: "'Inter', sans-serif",
+                size: 12,
+                weight: '500'
+              },
+              color: '#2D2A45'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                return ` ${label}: ₹${value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+              }
+            }
+          }
+        },
+        cutout: '68%',
+        animation: {
+          animateScale: true,
+          animateRotate: true,
+          duration: 1000
+        }
+      }
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}

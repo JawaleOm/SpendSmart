@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Budget Planner — SpendSmart Personal Expense Tracker{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+  <div>
+    <h1 class="font-heading" style="font-size: 1.85rem;">Monthly Budget Planner</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Set monthly spending limits, monitor remaining funds, and prevent student debt.
+    </p>
+  </div>
+  
+  <!-- Month Selector Form -->
+  <form method="GET" action="{{ url_for('budget_planner') }}" style="display: flex; align-items: center; gap: 0.5rem;">
+    <label for="budgetMonth" style="font-weight: 600; font-size: 0.88rem; color: var(--text-muted);">Select Month:</label>
+    <input
+      type="month"
+      id="budgetMonth"
+      name="month"
+      value="{{ selected_month }}"
+      class="form-control"
+      style="width: auto; padding: 0.45rem 0.85rem;"
+      onchange="this.form.submit()"
+    >
+  </form>
+</div>
+
+<!-- Warning Banners based on Thresholds: 70%, 90%, 100% -->
+{% if health.is_warning %}
+  {% if health.warning_level == 100 %}
+    <div class="card" style="margin-bottom: 2rem; background: rgba(255, 71, 87, 0.12); border: 2px solid var(--red); display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem 1.75rem;">
+      <span style="font-size: 2.25rem;">🛑</span>
+      <div>
+        <h3 class="font-heading" style="color: var(--red); font-size: 1.2rem; margin-bottom: 0.2rem;">
+          Budget Exceeded! You have spent {{ health.pct_display }} of your limit.
+        </h3>
+        <p style="color: var(--text); font-size: 0.92rem;">
+          You have overshot your monthly budget by <strong>{{ format_inr(totals.expense - budget.monthly_limit) }}</strong>. Please stop non-essential purchases immediately!
+        </p>
+      </div>
+    </div>
+  {% elif health.warning_level == 90 %}
+    <div class="card" style="margin-bottom: 2rem; background: rgba(255, 118, 117, 0.12); border: 2px solid var(--orange-deep); display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem 1.75rem;">
+      <span style="font-size: 2.25rem;">🚨</span>
+      <div>
+        <h3 class="font-heading" style="color: #D63031; font-size: 1.2rem; margin-bottom: 0.2rem;">
+          Near Limit Warning: {{ health.pct_display }} of Budget Spent
+        </h3>
+        <p style="color: var(--text); font-size: 0.92rem;">
+          Critical alert: You have less than 10% of your budget remaining ({{ format_inr(remaining_budget) }} left). Only spend on critical educational or living necessities.
+        </p>
+      </div>
+    </div>
+  {% elif health.warning_level == 70 %}
+    <div class="card" style="margin-bottom: 2rem; background: rgba(255, 179, 71, 0.15); border: 2px solid var(--accent); display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem 1.75rem;">
+      <span style="font-size: 2.25rem;">⚠️</span>
+      <div>
+        <h3 class="font-heading" style="color: #D35400; font-size: 1.2rem; margin-bottom: 0.2rem;">
+          Caution: {{ health.pct_display }} of Budget Reached
+        </h3>
+        <p style="color: var(--text); font-size: 0.92rem;">
+          You have crossed the 70% threshold for {{ month_label }}. Be careful with leisure spending, shopping, and dining out for the rest of the month.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+{% endif %}
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+  <!-- Left: Set / Update Budget Card -->
+  <section class="card" style="padding: 2rem;">
+    <h2 class="font-heading" style="font-size: 1.35rem; margin-bottom: 0.35rem;">
+      {% if budget %}Update Budget for {{ month_label }}{% else %}Set Budget for {{ month_label }}{% endif %}
+    </h2>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+      Define the maximum total expense you intend to spend during this calendar month.
+    </p>
+
+    <form method="POST" action="{{ url_for('budget_planner') }}">
+      <input type="hidden" name="month" value="{{ selected_month }}">
+
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label for="monthlyLimitInput" class="form-label">
+          Monthly Budget Limit (₹) <span style="color: var(--red);">*</span>
+        </label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); font-family: 'Poppins', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--primary);">₹</span>
+          <input
+            type="number"
+            step="100"
+            min="100"
+            id="monthlyLimitInput"
+            name="monthly_limit"
+            class="form-control"
+            style="padding-left: 2.25rem; font-size: 1.2rem; font-weight: 700;"
+            placeholder="e.g. 10000"
+            value="{{ budget.monthly_limit if budget else '10000' }}"
+            required
+          >
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem;">
+          Recommended student benchmark: ₹8,000 to ₹15,000 depending on accommodation and college fees.
+        </p>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%;">
+        <span>💾 Save Budget for {{ month_label }}</span>
+      </button>
+    </form>
+
+    <!-- Student Smart Budgeting Tips Box -->
+    <div style="margin-top: 2rem; padding: 1.25rem; background: rgba(108, 92, 231, 0.05); border-radius: 16px; border: 1px solid rgba(108, 92, 231, 0.12);">
+      <h4 class="font-heading" style="font-size: 0.95rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.35rem;">
+        <span>💡</span> <span>50-30-20 Rule for Students</span>
+      </h4>
+      <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+        &bull; <strong>50% Needs:</strong> Books, transport, mess food, essential bills.<br>
+        &bull; <strong>30% Wants:</strong> Cafes, outings, streaming subscriptions, new clothes.<br>
+        &bull; <strong>20% Savings:</strong> Emergency hostel fund & future certifications.
+      </p>
+    </div>
+  </section>
+
+  <!-- Right: Budget Status & Health Indicator Card -->
+  <section class="card" style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+        <h2 class="font-heading" style="font-size: 1.35rem;">Budget Status</h2>
+        <span class="badge {{ health.color_class }}" style="font-size: 0.85rem;">{{ health.status }}</span>
+      </div>
+
+      {% if budget %}
+        <!-- Spent vs Budget Stat Cards -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="padding: 1rem; background: rgba(255, 71, 87, 0.08); border-radius: 14px; border: 1px solid rgba(255, 71, 87, 0.2);">
+            <span style="font-size: 0.8rem; color: var(--red); font-weight: 600; text-transform: uppercase;">Total Spent</span>
+            <div style="font-family: 'Poppins', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--red); margin-top: 0.2rem;">
+              {{ format_inr(totals.expense) }}
+            </div>
+          </div>
+
+          <div style="padding: 1rem; background: rgba(0, 206, 201, 0.08); border-radius: 14px; border: 1px solid rgba(0, 206, 201, 0.2);">
+            <span style="font-size: 0.8rem; color: #00A896; font-weight: 600; text-transform: uppercase;">Budget Remaining</span>
+            <div style="font-family: 'Poppins', sans-serif; font-size: 1.4rem; font-weight: 800; color: {% if remaining_budget < 0 %}var(--red){% else %}#00A896{% endif %}; margin-top: 0.2rem;">
+              {{ format_inr(remaining_budget) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Budget Usage Bar -->
+        <div style="margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 600; margin-bottom: 0.4rem;">
+            <span>Budget Utilisation</span>
+            <span style="color: {{ health.progress_color }};">{{ health.pct_display }}</span>
+          </div>
+          <div class="progress-container" style="height: 16px;">
+            <div
+              class="progress-bar"
+              style="width: {{ min(health.pct, 100.0) }}%; background: {{ health.progress_color }};"
+            ></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem;">
+            <span>0%</span>
+            <span>70% (Caution)</span>
+            <span>90% (Near Limit)</span>
+            <span>100% (Limit)</span>
+          </div>
+        </div>
+
+        <!-- Health Indicator Description -->
+        <div style="padding: 1rem 1.25rem; background: rgba(108, 92, 231, 0.06); border-radius: 14px; border-left: 4px solid {{ health.progress_color }};">
+          <strong style="color: var(--text); font-size: 0.92rem; display: block; margin-bottom: 0.2rem;">Health Status: {{ health.status }}</strong>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">{{ health.message }}</p>
+        </div>
+
+      {% else %}
+        <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+          <span style="font-size: 3rem; display: block; margin-bottom: 0.75rem;">🎯</span>
+          <h3 class="font-heading" style="color: var(--text); font-size: 1.2rem;">No Budget Configured Yet</h3>
+          <p style="font-size: 0.9rem; margin-top: 0.3rem;">
+            Use the form on the left to set your spending limit for <strong>{{ month_label }}</strong>.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick action to see transactions -->
+    <div style="margin-top: 1.5rem; text-align: center;">
+      <a href="{{ url_for('transactions_list', month=selected_month) }}" style="color: var(--primary); font-weight: 600; font-size: 0.9rem;">
+        View all transactions for {{ month_label }} &rarr;
+      </a>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

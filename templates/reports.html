@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics — SpendSmart Personal Expense Tracker{% endblock %}
+
+{% block content %}
+<!-- Page Header & Month Selector -->
+<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+  <div>
+    <h1 class="font-heading" style="font-size: 1.85rem;">Financial Reports</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      In-depth breakdown of your monthly income, category spending, and 6-month historical trends.
+    </p>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+    <!-- Month Picker -->
+    <form method="GET" action="{{ url_for('reports_page') }}" style="display: flex; align-items: center; gap: 0.5rem;">
+      <label for="reportMonth" style="font-weight: 600; font-size: 0.88rem; color: var(--text-muted);">Month:</label>
+      <input
+        type="month"
+        id="reportMonth"
+        name="month"
+        value="{{ selected_month }}"
+        class="form-control"
+        style="width: auto; padding: 0.45rem 0.85rem;"
+        onchange="this.form.submit()"
+      >
+    </form>
+
+    <!-- Export CSV Button -->
+    <a href="{{ url_for('export_csv_route', month=selected_month) }}" class="btn btn-secondary">
+      <span>📥 Export CSV</span>
+    </a>
+  </div>
+</div>
+
+<!-- 1. Monthly Financial Summary Row (Income, Expenses, Net Savings/Deficit) -->
+<section class="summary-grid" style="margin-bottom: 2rem;">
+  
+  <div class="card summary-card metric-income">
+    <div class="summary-card-header">
+      <span class="summary-card-title">Total Inflows</span>
+      <div class="summary-icon-box">💰</div>
+    </div>
+    <div class="metric-value count-up" data-target="{{ totals.income }}">
+      {{ format_inr(totals.income) }}
+    </div>
+    <span style="font-size: 0.8rem; color: var(--green); font-weight: 600; margin-top: 0.4rem;">
+      Recorded Income for {{ month_label }}
+    </span>
+  </div>
+
+  <div class="card summary-card metric-expense">
+    <div class="summary-card-header">
+      <span class="summary-card-title">Total Outflows</span>
+      <div class="summary-icon-box">💸</div>
+    </div>
+    <div class="metric-value count-up" data-target="{{ totals.expense }}">
+      {{ format_inr(totals.expense) }}
+    </div>
+    <span style="font-size: 0.8rem; color: var(--red); font-weight: 600; margin-top: 0.4rem;">
+      Total Outflows for {{ month_label }}
+    </span>
+  </div>
+
+  <div class="card summary-card metric-balance">
+    <div class="summary-card-header">
+      <span class="summary-card-title">Net Savings / Deficit</span>
+      <div class="summary-icon-box">{% if totals.balance >= 0 %}📈{% else %}📉{% endif %}</div>
+    </div>
+    <div class="metric-value count-up" data-target="{{ totals.balance }}" style="color: {% if totals.balance < 0 %}var(--red){% else %}var(--green){% endif %};">
+      {{ format_inr(totals.balance) }}
+    </div>
+    <span style="font-size: 0.8rem; font-weight: 600; margin-top: 0.4rem; color: {% if totals.balance >= 0 %}var(--green){% else %}var(--red){% endif %};">
+      {% if totals.balance >= 0 %}
+        ▲ Net Surplus Saved ({{ ((totals.balance / totals.income * 100)|round(1)) if totals.income > 0 else 0 }}% of income)
+      {% else %}
+        ▼ Net Monthly Deficit (Spent more than income)
+      {% endif %}
+    </span>
+  </div>
+
+</section>
+
+<!-- 2. Two-Column Layout: Category Bar Chart & Needs vs Wants Split Chart -->
+<div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 1.75rem; margin-bottom: 2rem;">
+
+  <!-- Category-wise Expense Bar Chart -->
+  <section class="card">
+    <div style="margin-bottom: 1.25rem;">
+      <h3 class="font-heading" style="font-size: 1.2rem;">Spending by Category</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Horizontal comparison of expense buckets for {{ month_label }}</p>
+    </div>
+
+    {% if category_expenses and category_expenses|length > 0 %}
+      <div style="position: relative; height: 300px; width: 100%;">
+        <canvas id="categoryBarChart"></canvas>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 4rem 1rem; color: var(--text-muted);">
+        <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">📊</span>
+        <p>No expense data to display for this month.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Needs vs Wants Split Chart -->
+  <section class="card">
+    <div style="margin-bottom: 1.25rem;">
+      <h3 class="font-heading" style="font-size: 1.2rem;">Needs vs Wants Split</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Essential necessities vs discretionary lifestyle wishes</p>
+    </div>
+
+    {% if needs_wants.Need > 0 or needs_wants.Want > 0 %}
+      <div style="position: relative; height: 230px; width: 100%;">
+        <canvas id="needsWantsChart"></canvas>
+      </div>
+      <div style="display: flex; justify-content: space-around; margin-top: 1.25rem; text-align: center;">
+        <div style="padding: 0.75rem 1rem; background: rgba(0, 206, 201, 0.08); border-radius: 14px; border: 1px solid rgba(0, 206, 201, 0.2);">
+          <span style="font-size: 0.8rem; font-weight: 700; color: #00A896;">🌱 Needs (Essential)</span>
+          <div style="font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 800; color: #00A896;">
+            {{ format_inr(needs_wants.Need) }}
+          </div>
+        </div>
+        <div style="padding: 0.75rem 1rem; background: rgba(255, 107, 157, 0.08); border-radius: 14px; border: 1px solid rgba(255, 107, 157, 0.2);">
+          <span style="font-size: 0.8rem; font-weight: 700; color: #E84393;">✨ Wants (Lifestyle)</span>
+          <div style="font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 800; color: #E84393;">
+            {{ format_inr(needs_wants.Want) }}
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 4rem 1rem; color: var(--text-muted);">
+        <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">⚖️</span>
+        <p>No tagged expenses for this month.</p>
+      </div>
+    {% endif %}
+  </section>
+
+</div>
+
+<!-- 3. Category-Wise Expense Detailed Table -->
+<section class="card" style="margin-bottom: 2rem;">
+  <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h3 class="font-heading" style="font-size: 1.2rem;">Category Spending Details</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Tabular breakdown with percentages</p>
+    </div>
+  </div>
+
+  {% if category_expenses and category_expenses|length > 0 %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Share of Total</th>
+            <th style="text-align: right;">Amount Spent</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in category_expenses %}
+            <tr>
+              <td>
+                <span class="category-badge">{{ cat.category }}</span>
+              </td>
+              <td style="width: 50%;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <div class="progress-container" style="flex: 1; margin: 0;">
+                    <div class="progress-bar" style="width: {{ cat.percentage }}%; background: var(--primary);"></div>
+                  </div>
+                  <strong style="font-size: 0.85rem; min-width: 48px;">{{ cat.percentage }}%</strong>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <span class="amount-expense" style="font-size: 1.05rem;">
+                  {{ format_inr(cat.total) }}
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p style="text-align: center; color: var(--text-muted); padding: 2rem;">No category records found.</p>
+  {% endif %}
+</section>
+
+<!-- 4. Month-by-Month Spending Comparison Chart (Last 6 Months) -->
+<section class="card">
+  <div style="margin-bottom: 1.25rem;">
+    <h3 class="font-heading" style="font-size: 1.2rem;">6-Month Spending & Income Comparison</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted);">Historical cash flow trends over the past 6 months</p>
+  </div>
+
+  <div style="position: relative; height: 320px; width: 100%;">
+    <canvas id="monthlyComparisonChart"></canvas>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function() {
+    // 1. Category Bar Chart
+    {% if category_expenses and category_expenses|length > 0 %}
+      const ctxBar = document.getElementById('categoryBarChart');
+      if (ctxBar) {
+        new Chart(ctxBar, {
+          type: 'bar',
+          data: {
+            labels: {{ cat_labels | tojson }},
+            datasets: [{
+              label: 'Expense (₹)',
+              data: {{ cat_data | tojson }},
+              backgroundColor: 'rgba(108, 92, 231, 0.85)',
+              borderColor: '#6C5CE7',
+              borderWidth: 1.5,
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    return ` ₹${ctx.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(val) { return '₹' + val.toLocaleString('en-IN'); }
+                }
+              }
+            }
+          }
+        });
+      }
+    {% endif %}
+
+    // 2. Needs vs Wants Chart
+    {% if needs_wants.Need > 0 or needs_wants.Want > 0 %}
+      const ctxNW = document.getElementById('needsWantsChart');
+      if (ctxNW) {
+        new Chart(ctxNW, {
+          type: 'doughnut',
+          data: {
+            labels: ['Needs (Essential)', 'Wants (Lifestyle)'],
+            datasets: [{
+              data: [{{ needs_wants.Need }}, {{ needs_wants.Want }}],
+              backgroundColor: ['#00CEC9', '#FF6B9D'],
+              borderWidth: 2,
+              borderColor: '#FFFFFF'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom' },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    const label = ctx.label || '';
+                    const val = ctx.parsed || 0;
+                    return ` ${label}: ₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                  }
+                }
+              }
+            },
+            cutout: '65%'
+          }
+        });
+      }
+    {% endif %}
+
+    // 3. Month-by-Month Comparison Chart (Last 6 Months)
+    const ctxComp = document.getElementById('monthlyComparisonChart');
+    if (ctxComp) {
+      const compLabels = {{ comparison_labels | tojson }};
+      const compIncome = {{ comparison_income | tojson }};
+      const compExpense = {{ comparison_expense | tojson }};
+
+      new Chart(ctxComp, {
+        type: 'bar',
+        data: {
+          labels: compLabels,
+          datasets: [
+            {
+              label: 'Income (₹)',
+              data: compIncome,
+              backgroundColor: 'rgba(46, 213, 115, 0.85)',
+              borderColor: '#2ED573',
+              borderRadius: 6
+            },
+            {
+              label: 'Expense (₹)',
+              data: compExpense,
+              backgroundColor: 'rgba(255, 71, 87, 0.85)',
+              borderColor: '#FF4757',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ` ${ctx.dataset.label}: ₹${ctx.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(val) { return '₹' + val.toLocaleString('en-IN'); }
+              }
+            }
+          }
+        }
+      });
+    }
+  })();
+</script>
+{% endblock %}

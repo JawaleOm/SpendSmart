@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sign in to SpendSmart — Personal Expense Tracker. Spend smart. Save smarter.">
+  <title>Login — SpendSmart Personal Expense Tracker</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+
+  <!-- Google Fonts: Poppins (Headings) & Inter (Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Fullscreen Animated Floating & Popping Background Layer -->
+  <div id="spendsmart-bg-canvas" aria-hidden="true"></div>
+
+  <!-- Perfectly Centered Login Screen (Min-height: 100vh) -->
+  <div class="login-screen">
+
+    <!-- LIVE CLOCK (updates every second in pill-shaped badge with clock icon) -->
+    <div class="live-clock-badge" id="liveClockBadge" title="Current Date & Time">
+      <span class="clock-icon">🕒</span>
+      <span id="liveClockDisplay">Loading current time...</span>
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-card">
+
+      <!-- BIG SpendSmart Logo (140-180px tall SVG with soft glow / gentle float) -->
+      <div class="login-logo-container">
+        <img
+          src="{{ url_for('static', filename='images/spendsmart-logo.svg') }}"
+          alt="SpendSmart Logo"
+          class="login-big-logo"
+        >
+      </div>
+
+      <!-- App Name & Tagline -->
+      <h1 class="login-title font-heading">
+        Spend<span class="gradient-text">Smart</span>
+      </h1>
+      <p class="login-tagline">Spend smart. Save smarter.</p>
+
+      <!-- Flash Toast / Alerts inside card if any -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div style="margin-bottom: 1.25rem;">
+            {% for category, message in messages %}
+              <div class="badge badge-{{ category }}" style="display: flex; text-align: left; padding: 0.6rem 1rem; border-radius: 12px; font-size: 0.88rem; margin-bottom: 0.5rem;">
+                <span>💡</span> <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- The Form: ONLY THREE FIELDS (no password) -->
+      <form method="POST" action="{{ url_for('login_page') }}" class="login-form" id="loginForm" novalidate>
+        
+        <!-- 1. Full Name -->
+        <div class="form-group">
+          <label for="fullNameInput" class="form-label">
+            Full Name <span style="color: var(--red);">*</span>
+          </label>
+          <input
+            type="text"
+            id="fullNameInput"
+            name="name"
+            class="form-control {% if errors and errors.name %}is-invalid{% endif %}"
+            placeholder="e.g. Rahul Verma"
+            value="{{ form_data.name if form_data else '' }}"
+            required
+            autocomplete="name"
+          >
+          {% if errors and errors.name %}
+            <div class="invalid-feedback">
+              <span>⚠️</span> <span>{{ errors.name }}</span>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- 2. Email ID -->
+        <div class="form-group">
+          <label for="emailInput" class="form-label">
+            Email ID <span style="color: var(--red);">*</span>
+          </label>
+          <input
+            type="email"
+            id="emailInput"
+            name="email"
+            class="form-control {% if errors and errors.email %}is-invalid{% endif %}"
+            placeholder="e.g. rahul@example.com"
+            value="{{ form_data.email if form_data else '' }}"
+            required
+            autocomplete="email"
+          >
+          {% if errors and errors.email %}
+            <div class="invalid-feedback">
+              <span>⚠️</span> <span>{{ errors.email }}</span>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- 3. Phone Number -->
+        <div class="form-group">
+          <label for="phoneInput" class="form-label">
+            Phone Number <span style="color: var(--red);">*</span>
+          </label>
+          <input
+            type="tel"
+            id="phoneInput"
+            name="phone"
+            class="form-control {% if errors and errors.phone %}is-invalid{% endif %}"
+            placeholder="e.g. +91 9876543210 or 9876543210"
+            value="{{ form_data.phone if form_data else '' }}"
+            required
+            autocomplete="tel"
+          >
+          {% if errors and errors.phone %}
+            <div class="invalid-feedback">
+              <span>⚠️</span> <span>{{ errors.phone }}</span>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Large Gradient Rounded Login Button with hover pop & ripple -->
+        <button type="submit" id="btnLogin" class="btn btn-login">
+          <span>Login to SpendSmart</span>
+          <span>🚀</span>
+        </button>
+
+      </form>
+
+      <!-- Trust & Privacy Footnote -->
+      <p style="margin-top: 1.5rem; font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+        <span>🔒</span> <span>Private local SQLite session &bull; No password or OTP needed</span>
+      </p>
+
+    </div>
+  </div>
+
+  <!-- Background animation & App Scripts -->
+  <script src="{{ url_for('static', filename='js/background.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
